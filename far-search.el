@@ -1,9 +1,8 @@
 ;;; far-search.el --- search incrementally in many buffers at once
 
-;; Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004,
-;;   2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+;; Copyright (c) 2008 Aemon Cannon, aemoncannon -at- gmail -dot- com
 
-;; Author: Aemon Cannon <aemoncannon@gmail.com>
+;; Author: Aemon Cannon
 ;; Keywords: matching, lisp, tools
 
 ;; This file is part of far-search.
