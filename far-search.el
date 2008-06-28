@@ -56,14 +56,6 @@
 (defvar far-search-target-window nil
   "Window to which the far-search is applied to.")
 
-(defvar far-search-string nil
-  "Last regexp used by far-search.")
-(make-variable-buffer-local 'far-search-string)
-
-(defvar far-search-overlays nil
-  "List of overlays for far-search-mode.")
-(make-variable-buffer-local 'far-search-overlays)
-
 (defvar far-search-window-config nil
   "Old window configuration.")
 
@@ -71,10 +63,10 @@
   "String in mode line for additional info.")
 
 (defvar far-search-current-results '()
-  "The most recent far-search result-set.")
+  "The most recent far-search result list.")
 
 (defvar far-search-current-selected-result '()
-  "The most recent far-search result-set.")
+  "The currently selected far-search result.")
 
 ;; Define the local "\C-c" keymap
 (defvar far-search-mode-map
@@ -107,8 +99,6 @@
   (use-local-map far-search-mode-map)
   (far-search-mode-common)
   (run-mode-hooks 'far-search-mode-hook))
-
-
 
 ;;;###autoload
 (defun far-search ()
@@ -191,7 +181,6 @@
   (make-local-variable 'after-change-functions)
   (add-hook 'after-change-functions
 	    'far-search-auto-update)
-  ;; At least make the overlays go away if the buffer is killed
   (make-local-variable 'far-search-kill-buffer)
   (add-hook 'kill-buffer-hook 'far-search-kill-buffer)
   )
@@ -252,7 +241,7 @@ optional fourth argument FORCE is non-nil."
   (force-mode-line-update))
 
 (defun far-search-kill-buffer ()
-  "When the far-search buffer is killed make sure no overlays stay around."
+  "When the far-search buffer is killed, kill the target buffer."
   (remove-hook 'kill-buffer-hook 'far-search-kill-buffer)
   (if (buffer-live-p far-search-target-buffer)
       (kill-buffer far-search-target-buffer)))
@@ -288,7 +277,7 @@ optional fourth argument FORCE is non-nil."
 			  )))
 
 (defun far-search-update-target-buffer ()
-  "Switch to `far-search-target-buffer' and list all matches of `far-search-regexp'."
+  "This is where the magic happens. Update the result list."
   (save-excursion
     (set-buffer far-search-target-buffer)
     (setq buffer-read-only nil)
@@ -326,14 +315,14 @@ optional fourth argument FORCE is non-nil."
        (lambda (r)
 	 (let ((start-point (point)))
 	   (setf (far-search-result-link-offset r) start-point)
-	   (insert (format "%s....  [%s]" 
+	   (insert (format "%s....  \n[%s]" 
 			   (far-search-result-link-text r) 
 			   (far-search-result-match-file-name r)))
 	   (far-search-make-text-link (+ start-point (far-search-result-text-link-offset r))
 				      (+ start-point (far-search-result-text-link-offset r) (far-search-result-text-link-length r))
 				      (far-search-result-match-file-name r)
 				      (far-search-result-match-start r))
-	   (insert "\n\n...................\n\n\n")
+	   (insert "\n\n--------------------------\n\n")
 	   ))
        far-search-current-results)
 
