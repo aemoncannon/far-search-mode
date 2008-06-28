@@ -24,6 +24,8 @@
 
 ;;; Commentary:
 
+;; This mode owes much to regexp-builder, from which I stole the basic structure.
+
 ;; Basic usage:
 
 ;;  (add-to-list 'load-path "~/path/to/far-search/")
@@ -245,10 +247,6 @@ optional fourth argument FORCE is non-nil."
   (if (buffer-live-p far-search-target-buffer)
       (kill-buffer far-search-target-buffer)))
 
-;; The next functions are the interface between the regexp and
-;; its textual representation in the far-search buffer.
-;; They are the only functions concerned with the actual syntax
-;; being used.
 (defun far-search-read-regexp ()
   "Read current RE."
   (buffer-string))
