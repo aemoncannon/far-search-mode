@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; This mode owes much to regexp-builder, from which I stole the basic structure.
+;; This mode owes much of its structure to regexp-builder, by Detlev Zundel
 
 
 
@@ -99,19 +99,27 @@
 
 (defface far-search-result-file-name-face
   '((t (:foreground "slate gray")))
-  "Used for displaying the source file-name of a match.")
+  "Used for displaying the source file-name of a match."
+  :group 'far-search
+  )
 
 (defface far-search-result-seperator-lines-face
   '((t (:foreground "slate gray")))
-  "Used for displaying the seperation lines between search results.")
+  "Used for displaying the seperation lines between search results."
+  :group 'far-search
+  )
 
 (defface far-search-result-numbers-face
   '((t (:foreground "orange")))
-  "Used for displaying the quick number links for results.")
+  "Used for displaying the quick number links for results."
+  :group 'far-search
+  )
 
 (defface far-search-result-match-face
   '((t (:foreground "light green")))
-  "Used for displaying the matched substring.")
+  "Used for displaying the matched substring."
+  :group 'far-search
+  )
 
 (defun far-search-mode ()
   "Major mode for incrementally seaching through all open buffers."
@@ -352,20 +360,20 @@ optional fourth argument FORCE is non-nil."
 				  (+ p (far-search-result-text-link-offset r) (far-search-result-text-link-length r)) 
 				  '(comment nil face far-search-result-match-face)))
 
-	     ;; Insert metadata, filename, line number
-	     (let ((p (point)))
-	       (insert (format "[%s : %s]" 
-			       (far-search-result-match-file-name r) 
-			       (far-search-result-match-line r)))
-	       (add-text-properties p (point) '(comment nil face far-search-result-file-name-face)))
+	   ;; Insert metadata, filename, line number
+	   (let ((p (point)))
+	     (insert (format "[%s : %s]" 
+			     (far-search-result-match-file-name r) 
+			     (far-search-result-match-line r)))
+	     (add-text-properties p (point) '(comment nil face far-search-result-file-name-face)))
 
-	     ;; Insert a seperator line
-	     (let ((p (point)))	   
-	       (insert (format "\n\n%s\n\n" (make-string (window-width) ?-)))
-	       (add-text-properties p (point) '(comment nil face far-search-result-seperator-lines-face)))
+	   ;; Insert a seperator line
+	   (let ((p (point)))	   
+	     (insert (format "\n\n%s\n\n" (make-string (window-width) ?-)))
+	     (add-text-properties p (point) '(comment nil face far-search-result-seperator-lines-face)))
 
-	     (incf counter)
-	     )
+	   (incf counter)
+	   )
 	 far-search-current-results))
 
       (setq buffer-read-only t)
