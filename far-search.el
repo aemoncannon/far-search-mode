@@ -44,7 +44,6 @@
   :group 'far-search
   :type 'hook)
 
-;; Internal variables below
 (defvar far-search-mode nil
   "Enables the far-search minor mode.")
 
@@ -110,9 +109,12 @@
   '((t (:foreground "orange")))
   "Used for displaying the quick number links for results.")
 
+(defface far-search-result-match-face
+  '((t (:foreground "light green")))
+  "Used for displaying the matched substring.")
+
 (defun far-search-mode ()
-  "Major mode for interactively building Regular Expressions.
-\\{reb-mode-map}"
+  "Major mode for incrementally seaching through all open buffers."
   (interactive)
   (kill-all-local-variables)
   (setq major-mode 'far-search-mode
@@ -294,15 +296,6 @@ optional fourth argument FORCE is non-nil."
 	     (equal b-name "*Messages*"))))
      all-buffers)))
 
-(defun far-search-make-text-link (start end file-path offset)
-  "Make an emacs button, from start to end in current buffer, linking to file-path and offset."
-  (make-button start end
-	       'face font-lock-constant-face
-	       'action `(lambda (x)
-			  (far-search-quit)
-			  (find-file ,file-path)
-			  (goto-char ,offset)
-			  )))
 
 (defun far-search-update-target-buffer ()
   "This is where the magic happens. Update the result list."
@@ -352,9 +345,12 @@ optional fourth argument FORCE is non-nil."
 		 (insert (format "%s) " counter))
 		 (add-text-properties p (point) '(comment nil face far-search-result-numbers-face))))
 
-	   (let ((start-point (point)))
-	     ;; Insert the actual text
+	   (let ((p (point)))
+	     ;; Insert the actual text, highlighting the matched substring
 	     (insert (format "%s....  \n" (far-search-result-link-text r))) 
+	     (add-text-properties (+ p (far-search-result-text-link-offset r))
+				  (+ p (far-search-result-text-link-offset r) (far-search-result-text-link-length r)) 
+				  '(comment nil face far-search-result-match-face)))
 
 	     ;; Insert metadata, filename, line number
 	     (let ((p (point)))
@@ -363,19 +359,13 @@ optional fourth argument FORCE is non-nil."
 			       (far-search-result-match-line r)))
 	       (add-text-properties p (point) '(comment nil face far-search-result-file-name-face)))
 
-	     ;; Create the highlighted button link
-	     (far-search-make-text-link (+ start-point (far-search-result-text-link-offset r))
-					(+ start-point (far-search-result-text-link-offset r) (far-search-result-text-link-length r))
-					(far-search-result-match-file-name r)
-					(far-search-result-match-start r))
-
 	     ;; Insert a seperator line
 	     (let ((p (point)))	   
 	       (insert (format "\n\n%s\n\n" (make-string (window-width) ?-)))
 	       (add-text-properties p (point) '(comment nil face far-search-result-seperator-lines-face)))
 
 	     (incf counter)
-	     ))
+	     )
 	 far-search-current-results))
 
       (setq buffer-read-only t)
