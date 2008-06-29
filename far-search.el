@@ -78,7 +78,11 @@
     (define-key map "\C-c\C-q" 'far-search-quit)
     (define-key map "\C-n" 'far-search-next-match)
     (define-key map "\C-p" 'far-search-prev-match)
-    (define-key map [(return)] 'far-search-i-feel-lucky)
+    (define-key map [(return)] 'far-search-choose-current-result)
+    (mapc (lambda (num)
+	    (define-key map (number-to-string num) 
+	      `(lambda () (interactive) (far-search-choose-by-number ,num))))
+	  '(0 1 2 3 4 5 6 7 8 9))
     map)
   "Keymap used by far-search.")
 
@@ -88,10 +92,23 @@
   (match-file-name nil) 
   (match-start nil)
   (match-end nil)
+  (match-line nil)
   (text-link-offset 0)
   (text-link-length 0)
   (link-offset 0)
   )
+
+(defface far-search-result-file-name-face
+  '((t (:foreground "slate gray")))
+  "Used for displaying the source file-name of a match.")
+
+(defface far-search-result-seperator-lines-face
+  '((t (:foreground "slate gray")))
+  "Used for displaying the seperation lines between search results.")
+
+(defface far-search-result-numbers-face
+  '((t (:foreground "orange")))
+  "Used for displaying the quick number links for results.")
 
 (defun far-search-mode ()
   "Major mode for interactively building Regular Expressions.
@@ -126,7 +143,7 @@
   (kill-buffer far-search-buffer-name)
   (set-window-configuration far-search-window-config))
 
-(defun far-search-i-feel-lucky ()
+(defun far-search-choose-current-result ()
   "Jump to the target of the currently selected far-search-result."
   (interactive)
   (if (and (far-search-result-p far-search-current-selected-result)
@@ -139,6 +156,17 @@
 	       (offset (far-search-result-match-start r)))
 	  (find-file file-name)
 	  (goto-char offset)))))
+
+
+(defun far-search-choose-by-number (num)
+  "Select result by number."
+  (if (and far-search-current-results
+	   (< num (length far-search-current-results)))
+      (let ((next (nth num far-search-current-results)))
+	(setq far-search-current-selected-result next)
+	(far-search-update-result-selection)
+	(far-search-choose-current-result)
+	)))
 
 
 (defun far-search-next-match ()
@@ -303,6 +331,7 @@ optional fourth argument FORCE is non-nil."
 			  :match-file-name (buffer-file-name)
 			  :match-start (match-beginning 0)
 			  :match-end (match-end 0)
+			  :match-line (line-number-at-pos (match-beginning 0))
 			  :text-link-offset (- (match-beginning 0) (point-at-bol))
 			  :text-link-length (length (match-string 0))) far-search-current-results)
 		   )))
@@ -311,20 +340,43 @@ optional fourth argument FORCE is non-nil."
       (if far-search-current-results 
 	  (setq far-search-current-selected-result (first far-search-current-results)))
 
-      (mapc
-       (lambda (r)
-	 (let ((start-point (point)))
-	   (setf (far-search-result-link-offset r) start-point)
-	   (insert (format "%s....  \n[%s]" 
-			   (far-search-result-link-text r) 
-			   (far-search-result-match-file-name r)))
-	   (far-search-make-text-link (+ start-point (far-search-result-text-link-offset r))
-				      (+ start-point (far-search-result-text-link-offset r) (far-search-result-text-link-length r))
-				      (far-search-result-match-file-name r)
-				      (far-search-result-match-start r))
-	   (insert "\n\n--------------------------\n\n")
-	   ))
-       far-search-current-results)
+      (let ((counter 0))
+	(mapc
+	 (lambda (r)
+	   ;; Save this for later use, for next/prev actions
+	   (setf (far-search-result-link-offset r) (point))
+
+	   ;; Insert item numbers
+	   (if (< counter 10)
+	       (let ((p (point)))
+		 (insert (format "%s) " counter))
+		 (add-text-properties p (point) '(comment nil face far-search-result-numbers-face))))
+
+	   (let ((start-point (point)))
+	     ;; Insert the actual text
+	     (insert (format "%s....  \n" (far-search-result-link-text r))) 
+
+	     ;; Insert metadata, filename, line number
+	     (let ((p (point)))
+	       (insert (format "[%s : %s]" 
+			       (far-search-result-match-file-name r) 
+			       (far-search-result-match-line r)))
+	       (add-text-properties p (point) '(comment nil face far-search-result-file-name-face)))
+
+	     ;; Create the highlighted button link
+	     (far-search-make-text-link (+ start-point (far-search-result-text-link-offset r))
+					(+ start-point (far-search-result-text-link-offset r) (far-search-result-text-link-length r))
+					(far-search-result-match-file-name r)
+					(far-search-result-match-start r))
+
+	     ;; Insert a seperator line
+	     (let ((p (point)))	   
+	       (insert (format "\n\n%s\n\n" (make-string (window-width) ?-)))
+	       (add-text-properties p (point) '(comment nil face far-search-result-seperator-lines-face)))
+
+	     (incf counter)
+	     ))
+	 far-search-current-results))
 
       (setq buffer-read-only t)
       )))
